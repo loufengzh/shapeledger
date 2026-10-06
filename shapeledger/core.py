@@ -1,5 +1,6 @@
 """Observed JSON shapes. Counts never include scalar values."""
 import json
+import sys
 from fractions import Fraction
 
 VERSION = 1
@@ -44,6 +45,8 @@ def profile(stream, max_nodes=10000, max_depth=64, max_line_bytes=1048576):
         raise ShapeError('limits must be positive integers')
     if max_nodes > 10000 or max_depth > 64:
         raise ShapeError('profile format limits: 10000 nodes and depth 64')
+    if max_line_bytes >= sys.maxsize:
+        raise ShapeError('line byte limit must be smaller than sys.maxsize')
     nodes = {}
     records = 0
     while True:

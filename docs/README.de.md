@@ -13,7 +13,7 @@ python -m shapeledger compare /tmp/baseline.shape.json /tmp/candidate.shape.json
 python -m shapeledger compare /tmp/baseline.shape.json /tmp/candidate.shape.json --fail-on added_type --fail-on removed_path --fail-on missing_increase
 ```
 
-Der letzte Befehl liefert für diese Beispiele Exitcode 1. `python -m pip install .` installiert den Befehl `shapeledger`. Der Build braucht setuptools, die Laufzeit keine Fremdbibliotheken. `profile -` liest stdin. Deterministisches JSON erscheint auf stdout. In eine neue Datei umleiten: Die Shell kann eine vorhandene Datei schon vor der Eingabeprüfung leeren. Das Programm gibt keine Teilprofile aus.
+Der letzte Befehl liefert für diese Beispiele Exitcode 1. `python -m pip install .` installiert den Befehl `shapeledger`. Der Build braucht setuptools, die Laufzeit keine Fremdbibliotheken. `profile -` liest stdin. Deterministisches JSON erscheint auf stdout. In eine neue Datei umleiten: Die Shell kann eine vorhandene Datei schon vor der Eingabeprüfung leeren. Die Eingabe wird vor der Ausgabe vollständig validiert. Ein Ausgabefehler kann eine unvollständige Datei hinterlassen; bei Exitcode 2 sollte diese verworfen werden.
 
 ## Eingabe und Zählweise
 
@@ -42,9 +42,9 @@ Alle Ereignisse werden unabhängig von der CI-Politik ausgegeben. Mit wiederholt
 
 ## Grenzen
 
-Streaming erfolgt pro Datensatz, nicht pro JSON-Token. Standard: 1 MiB pro Zeile einschließlich Zeilenumbruch (`--max-line-bytes`), höchstens 10.000 Knoten (`--max-nodes`), Pfadtiefe 64 (`--max-depth`, Wurzel 0). Knoten- und Tiefenlimits lassen sich nur senken. Alle Limits müssen positive ganze Zahlen sein. Speicherbedarf hängt von maximaler Zeile und gespeicherten Pfaden ab. Array-Elemente werden zusammengefasst, dynamische Schlüssel nicht normalisiert. Der Python-Parser kann tiefe Datensätze früher ablehnen. Jeder Profilvergleichseingang ist auf 32 MiB begrenzt; Felder, Version, Pfade, Zählungen und Elternbeziehungen werden geprüft.
+Streaming erfolgt pro Datensatz, nicht pro JSON-Token. Standard: 1 MiB pro Zeile einschließlich Zeilenumbruch (`--max-line-bytes`), höchstens 10.000 Knoten (`--max-nodes`), Pfadtiefe 64 (`--max-depth`, Wurzel 0). Knoten- und Tiefenlimits lassen sich nur senken. Alle Limits müssen positive ganze Zahlen sein. Das Zeilenlimit muss kleiner als Pythons plattformabhängiger Wert `sys.maxsize` sein, damit ein zusätzliches Byte zur Erkennung überlanger Datensätze Platz hat; größere Werte werden vor dem Lesen der Datensätze abgelehnt. Speicherbedarf hängt von maximaler Zeile und gespeicherten Pfaden ab. Array-Elemente werden zusammengefasst, dynamische Schlüssel nicht normalisiert. Der Python-Parser kann tiefe Datensätze früher ablehnen. Jeder Profilvergleichseingang ist auf 32 MiB begrenzt; Felder, Version, Pfade, Zählungen und Elternbeziehungen werden geprüft.
 
-Profile sind Beobachtungen, keine kryptografischen Nachweise oder vollständigen JSON Schemas. Keine Schemavalidierung, Verteilungsinferenz, Profilzusammenführung, Feldfilter oder Zahlenbereiche. Floats werden durch die Standardbibliothek geparst; ihre Genauigkeit beeinflusst die Typzählung nicht. Ausgaben benötigen Speicherplatz; eine geschlossene Pipe verursacht einen I/O-Fehler.
+Profile sind Beobachtungen, keine kryptografischen Nachweise oder vollständigen JSON Schemas. Keine Schemavalidierung, Verteilungsinferenz, Profilzusammenführung, Feldfilter oder Zahlenbereiche. Floats werden durch die Standardbibliothek geparst; ihre Genauigkeit beeinflusst die Typzählung nicht. Ausgaben benötigen Speicherplatz. Ein voller Datenträger oder eine geschlossene Pipe, auch bei einem Fehler beim Leeren des Ausgabepuffers, führt zu Exitcode 2 mit einer bereinigten Ausgabefehlermeldung. Dies hat Vorrang vor Exitcode 0 oder 1 der Vergleichsbedingungen; erfolgreiches Leeren des Puffers garantiert keine dauerhafte Speicherung.
 
 ## Alternativen und Entwicklung
 

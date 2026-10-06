@@ -13,7 +13,7 @@ python -m shapeledger compare /tmp/baseline.shape.json /tmp/candidate.shape.json
 python -m shapeledger compare /tmp/baseline.shape.json /tmp/candidate.shape.json --fail-on added_type --fail-on removed_path --fail-on missing_increase
 ```
 
-最后一条命令对这些示例返回 1。运行 `python -m pip install .` 可安装 `shapeledger` 命令；构建需要 setuptools，运行不需要第三方库。`profile -` 从标准输入读取。结果是确定性的 JSON，写到标准输出。请重定向到新文件：即使输入失败，shell 也可能先截断旧文件。工具不会输出部分分析结果。
+最后一条命令对这些示例返回 1。运行 `python -m pip install .` 可安装 `shapeledger` 命令；构建需要 setuptools，运行不需要第三方库。`profile -` 从标准输入读取。结果是确定性的 JSON，写到标准输出。请重定向到新文件：即使输入失败，shell 也可能先截断旧文件。工具会先完整验证输入再输出。输出失败可能留下不完整文件；命令退出码为 2 时应丢弃该文件。
 
 ## 输入与计数语义
 
@@ -42,9 +42,9 @@ python -m shapeledger compare /tmp/baseline.shape.json /tmp/candidate.shape.json
 
 ## 限制与安全
 
-按记录流式处理，不是按 JSON 词元。默认每行最多 1 MiB（含换行符，`--max-line-bytes`）；最多 10,000 个独立节点（`--max-nodes`）；路径深度最多 64（`--max-depth`，根深度为 0）。节点和深度参数只能降低格式上限，所有限制必须为正整数。内存取决于最大允许行和保留的路径集合；数组元素合并统计，不归一化动态键。Python 解析器可能先拒绝过深的记录。每个比较文件最多 32 MiB，并验证字段、版本、路径、计数和父子关系。
+按记录流式处理，不是按 JSON 词元。默认每行最多 1 MiB（含换行符，`--max-line-bytes`）；最多 10,000 个独立节点（`--max-nodes`）；路径深度最多 64（`--max-depth`，根深度为 0）。节点和深度参数只能降低格式上限，所有限制必须为正整数。行字节限制必须小于 Python 平台相关的 `sys.maxsize`，为检测超长记录所需的额外一字节留出空间；更大的值在读取记录前即被拒绝。内存取决于最大允许行和保留的路径集合；数组元素合并统计，不归一化动态键。Python 解析器可能先拒绝过深的记录。每个比较文件最多 32 MiB，并验证字段、版本、路径、计数和父子关系。
 
-这不是完整 JSON Schema 或可信证明，不做模式验证、分布推断、分析合并、字段忽略或数值范围统计。浮点数使用标准库解析，其精度不影响类型计数。输出需要磁盘空间；关闭的管道属于 I/O 错误。
+这不是完整 JSON Schema 或可信证明，不做模式验证、分布推断、分析合并、字段忽略或数值范围统计。浮点数使用标准库解析，其精度不影响类型计数。输出需要磁盘空间。磁盘已满或管道已关闭（包括缓冲区刷新失败）时返回退出码 2，并输出不包含敏感内容的输出错误诊断。该错误优先于比较门槛的退出码 0 或 1；刷新成功并不保证数据已持久化。
 
 ## 替代方案与开发
 
