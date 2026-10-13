@@ -56,3 +56,5 @@ python -m pip wheel --no-deps . -w dist
 ```
 
 CI testet Python 3.10–3.13 und die Wheel-Installation. Beiträge brauchen Regressionstests; bei geänderter Semantik alle vier Sprachfassungen aktualisieren. Nur synthetische Beispiele verwenden, keine privaten Daten einchecken. Mögliche Erweiterungen: Profilzusammenführung, Pfadfilter, Budgets für dynamische Schlüssel. MIT-Lizenz.
+
+Ist die Standardausgabe bereits beim Start von Python geschlossen, liefert der Befehl ebenfalls eine bereinigte Ausgabefehlerdiagnose und Exit-Code 2, auch wenn die Vergleichsprüfung sonst 0 oder 1 zurückgeben würde. Ein nicht verfügbarer stdin bei `profile -` ergibt einen bereinigten Eingabefehler (Exit-Code 2); ein geschlossener Python-stdout-Stream ergibt einen Ausgabefehler (Exit-Code 2).

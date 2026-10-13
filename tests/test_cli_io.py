@@ -57,6 +57,48 @@ class OutputErrors(unittest.TestCase):
         self.assertNotIn(b'Traceback', result.stderr)
         self.assertNotIn(b'private', result.stderr)
 
+    @unittest.skipUnless(os.name == 'posix', 'requires POSIX descriptor inheritance')
+    def test_stdout_closed_before_interpreter_start(self):
+        # exec starts a fresh interpreter with fd 1 absent, so stdout is None.
+        launcher = ('import os, sys; os.close(1); '
+                    'os.execv(sys.executable, [sys.executable, "-m", "shapeledger"] + sys.argv[1:])')
+        with tempfile.TemporaryDirectory() as tmp:
+            base, candidate = Path(tmp) / 'base.json', Path(tmp) / 'candidate.json'
+            base.write_text(json.dumps(profile(io.BytesIO(b'1'))))
+            candidate.write_text(json.dumps(profile(io.BytesIO(b'true'))))
+            commands = [
+                ['profile', '-'],
+                ['compare', str(base), str(candidate)],
+                ['compare', str(base), str(candidate), '--fail-on', 'added_type'],
+            ]
+            for command in commands:
+                with self.subTest(command=command):
+                    result = subprocess.run(
+                        [sys.executable, '-c', launcher] + command,
+                        input=b'{}\n', capture_output=True)
+                    self.assert_output_error(result)
+                    self.assertEqual(result.stdout, b'')
+
+    def test_closed_stdout_stream(self):
+        result = subprocess.run(
+            [sys.executable, '-c',
+             'import sys; from shapeledger.__main__ import main; '
+             'sys.stdout.close(); sys.exit(main(["profile", "-"]))'],
+            input=b'{}\n', capture_output=True)
+        self.assert_output_error(result)
+        self.assertEqual(result.stdout, b'')
+
+    @unittest.skipUnless(os.name == 'posix', 'requires POSIX descriptor inheritance')
+    def test_stdin_closed_before_interpreter_start(self):
+        result = subprocess.run(
+            [sys.executable, '-c',
+             'import os, sys; os.close(0); '
+             'os.execv(sys.executable, [sys.executable, "-m", "shapeledger", "profile", "-"])'],
+            capture_output=True)
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertEqual(result.stdout, b'')
+        self.assertEqual(result.stderr, b'shapeledger: input rejected (OSError)\n')
+
     def test_preclosed_stdout_descriptor(self):
         result = subprocess.run(
             [sys.executable, '-c',

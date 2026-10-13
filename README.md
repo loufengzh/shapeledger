@@ -58,3 +58,5 @@ python -m pip wheel --no-deps . -w dist
 ```
 
 CI tests Python 3.10–3.13 and installation of a built wheel. Contributions should include regression tests and updates to all four language guides when semantics change. Synthetic examples only; do not commit private data. Potential future work: profile merging, path filters and explicit dynamic-key budgets. MIT licensed.
+
+If stdout is already closed when Python starts, output also fails with the same sanitized diagnostic and exit 2, including when a comparison gate would otherwise return 0 or 1. An unavailable stdin for `profile -` is a sanitized input error (exit 2); a closed Python stdout stream is an output error (exit 2).

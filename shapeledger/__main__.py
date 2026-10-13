@@ -21,6 +21,8 @@ def main(argv=None):
     try:
         if args.command == 'profile':
             if args.input == '-':
+                if sys.stdin is None:
+                    raise OSError("stdin is unavailable")
                 result = profile(sys.stdin.buffer, args.max_nodes, args.max_depth, args.max_line_bytes)
             else:
                 with open(args.input, 'rb') as f:
@@ -43,11 +45,14 @@ def main(argv=None):
         print('shapeledger: input rejected (%s)' % detail, file=sys.stderr)
         return 2
     try:
+        # Python uses None when stdout was absent at interpreter startup.
+        if sys.stdout is None:
+            raise OSError("stdout is unavailable")
         print(json.dumps(result, sort_keys=True, ensure_ascii=True, indent=2))
         # Catch buffered write failures before interpreter shutdown changes the
         # documented error status to 120 and emits an unsanitized diagnostic.
         sys.stdout.flush()
-    except OSError as exc:
+    except (OSError, ValueError) as exc:
         # Discard pending buffered output so shutdown cannot retry a failed sink.
         # dup2 retains stdout's descriptor and leaves other descriptors alone.
         try:
